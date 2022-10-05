@@ -1,8 +1,6 @@
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
-from django.views.decorators.cache import cache_page
-from django.core.cache import cache
 
 from .forms import PostForm, CommentForm
 from .models import Follow, Group, Post, User
@@ -18,8 +16,9 @@ def page_obj(request, post_list):
 
 
 def index(request):
-    return render(request, POST_INDEX_HTML, cache.set(
-        'page_obj', page_obj(request, Post.objects.all())))
+    return render(request, POST_INDEX_HTML, {
+        'page_obj': page_obj(request, Post.objects.all()),
+    })
 
 
 def group_posts(request, slug):
@@ -32,16 +31,12 @@ def group_posts(request, slug):
 
 def profile(request, username):
     author = get_object_or_404(User, username=username)
-    if request.user.is_authenticated:
-        following = Follow.objects.filter(
-            user=request.user, author=author
-        ).exists()
-    else:
-        following = False
     return render(request, POST_PROFILE_HTML, {
         'author': author,
         'page_obj': page_obj(request, author.posts.all()),
-        'following': following
+        'following': request.user.is_authenticated and Follow.objects.filter(
+            user=request.user,
+            author=author).exists()
     })
 
 
@@ -112,10 +107,12 @@ def follow_index(request):
 
 @login_required
 def profile_follow(request, username):
-    profile_author = get_object_or_404(User, username=username)
-    is_follower = Follow.objects.select_related('follower')
-    if is_follower != request.user and is_follower.exists():
-        Follow.objects.create(user=request.user, author=profile_author)
+    author = get_object_or_404(User, username=username)
+    if author != request.user:
+        if not Follow.objects.filter(
+                author=author, user=request.user).exists():
+            Follow.objects.create(
+                author=author, user=request.user)
     return redirect('posts:profile', username)
 
 

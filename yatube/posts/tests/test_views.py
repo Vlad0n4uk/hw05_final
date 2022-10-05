@@ -2,16 +2,20 @@ import shutil
 import tempfile
 
 from django.conf import settings
+from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
-from ..models import Group, Post, User
+from ..models import Follow, Group, Post, User
 
 INDEX_URL = reverse('posts:index')
 GROUP_URL = reverse('posts:group_list', args=['slugtest'])
 NOT_GROUP_URL = reverse('posts:group_list', args=['slugtest_2'])
 PROFILE_URL = reverse('posts:profile', args=['Vlad0n4uk'])
+FOLLOW_INDEX_URL = reverse('posts:follow_index')
+FOLLOW_URL = reverse('posts:profile_follow', args=['Vlad0n4uk'])
+UNFOLLOW_URL = reverse('posts:profile_unfollow', args=['Vlad0n4uk'])
 NAME_GIF = 'posts/small.gif'
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
@@ -55,6 +59,7 @@ class ViewsTests(TestCase):
         cls.POST_DETAIL_URL = reverse(
             'posts:post_detail', args=[cls.post.pk]
         )
+        cls.follower = User.objects.create_user(username='follower')
 
     @classmethod
     def tearDownClass(cls):
@@ -62,12 +67,16 @@ class ViewsTests(TestCase):
         shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
 
     def setUp(self):
+        self.guest_client = Client()
         self.authorized_client = Client()
+        self.auth_follower = Client()
         # Авторизуем пользователя
         self.authorized_client.force_login(self.user)
+        self.auth_follower.force_login(self.follower)
         self.POST_DETAIL_ARGS = reverse(
             'posts:post_detail', args=[self.post.pk]
         )
+        cache.clear()
 
     def test_post_at_different_pages(self):
         pages_list = [
@@ -104,3 +113,59 @@ class ViewsTests(TestCase):
     def test_author_in_profile(self):
         response = self.authorized_client.get(PROFILE_URL)
         self.assertEqual(self.user, response.context['author'])
+
+    def test_index_page_cache(self):
+        first_content = self.authorized_client.get(INDEX_URL).content
+        Post.objects.all().delete()
+        self.assertEqual(
+            first_content,
+            (self.authorized_client.get(INDEX_URL).content)
+        )
+        cache.clear()
+        self.assertNotEqual(
+            first_content,
+            (self.authorized_client.get(INDEX_URL).content)
+        )
+
+    def test_follow_posts(self):
+        Follow.objects.create(user=self.follower,
+                              author=self.user)
+        self.assertEqual(Follow.objects.count(), 1)
+        "Отправляем POST-запрос и проверяем нет ли повторной подписки"
+        self.auth_follower.post(FOLLOW_URL)
+        self.assertEqual(Follow.objects.count(), 1)
+        "Проверяем наличие поста в ленте подписок у подписчика"
+        self.assertEqual(len(self.auth_follower.get(
+            FOLLOW_INDEX_URL).context['page_obj']), 1)
+        "Проверяем наличие поста в ленте подписок у не-подписчика"
+        self.assertEqual(len(self.authorized_client.get(
+            FOLLOW_INDEX_URL).context['page_obj']), 0)
+
+    def test_follow_and_unfollow(self):
+        form_data = {
+            'author': self.user,
+            'user': self.follower
+        }
+        # Отправляем POST-запрос
+        self.auth_follower.post(
+            FOLLOW_URL,
+            data=form_data,
+            follow=True
+        )
+        self.assertTrue(
+            Follow.objects.filter(
+                author=self.user,
+                user=self.follower,
+            ).exists()
+        )
+        self.auth_follower.post(
+            UNFOLLOW_URL,
+            data=form_data,
+            follow=True
+        )
+        self.assertFalse(
+            Follow.objects.filter(
+                author=self.user,
+                user=self.follower,
+            ).exists()
+        )

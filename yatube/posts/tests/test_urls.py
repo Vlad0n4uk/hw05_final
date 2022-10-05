@@ -1,10 +1,11 @@
 from http import HTTPStatus
 
+from django.core.cache import cache
 from django.test import Client, TestCase
 from django.urls import reverse
 
 from ..models import Group, Post, User
-from posts.settings import (POST_CREATE_HTML, POST_DETAIL_HTML,
+from posts.settings import (ERROR_HTML, POST_CREATE_HTML, POST_DETAIL_HTML,
                             POST_EDIT_HTML, POST_GROUP_LIST_HTML,
                             POST_INDEX_HTML, POST_PROFILE_HTML)
 
@@ -56,6 +57,7 @@ class PostURLTests(TestCase):
         # Авторизуем пользователя
         self.author.force_login(self.user)
         self.another.force_login(self.user_2)
+        cache.clear()
 
     def test_status_code(self):
         test_status_code_urls = [
@@ -86,6 +88,7 @@ class PostURLTests(TestCase):
             PROFILE_URL: POST_PROFILE_HTML,
             self.DETAIL_URL: POST_DETAIL_HTML,
             self.EDIT_URL: POST_EDIT_HTML,
+            ERROR_URL: ERROR_HTML,
         }
         for address, template in templates_url_names.items():
             with self.subTest(address=address):

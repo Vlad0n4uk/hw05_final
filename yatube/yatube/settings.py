@@ -22,7 +22,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'nq@iilhi4vc&1#_%o6*ja0!8z80&xx59_ib^lo@)c^$%ybd&p#'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = [
     'localhost',
@@ -150,3 +150,6 @@ CACHES = {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
     }
 }
+
+# Actual 403 CSRF
+CSRF_FAILURE_VIEW = 'core.views.csrf_failure'
