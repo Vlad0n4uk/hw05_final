@@ -153,15 +153,9 @@ class ViewsTests(TestCase):
                 user=self.follower,
             ).exists()
         )
-        "Данные для передачи в запрос"
-        form_data = {
-            'author': self.user,
-            'user': self.follower
-        }
-        "Отправляем POST-запрос и проверяем наличие объекта модели Follow"
+        "Отправляем GET-запрос и проверяем наличие объекта модели Follow"
         self.auth_follower.get(
             FOLLOW_URL,
-            data=form_data,
             follow=True
         )
         self.assertTrue(
@@ -173,16 +167,11 @@ class ViewsTests(TestCase):
 
     def test_unfollow(self):
         "Подпишем пользователя на автора"
-        self.auth_follower.get(FOLLOW_URL)
-        "Данные для передачи в запрос"
-        form_data = {
-            'author': self.user,
-            'user': self.follower
-        }
+        Follow.objects.create(user=self.follower,
+                              author=self.user)
         "Отправляем GET-запрос и проверяем отсутствие объекта модели Follow"
         self.auth_follower.get(
             UNFOLLOW_URL,
-            data=form_data,
             follow=True
         )
         self.assertFalse(

@@ -145,6 +145,8 @@ class PostCreateFormsTests(TestCase):
             data=form_data,
             follow=True
         )
+        actual_post = Post.objects.get(pk=self.post.pk)
+        self.assertEqual(self.post, actual_post)
         self.assertRedirects(response, self.POST_EDIT_URL_REDIRECT)
 
     def test_post_edit_another(self):
@@ -158,6 +160,8 @@ class PostCreateFormsTests(TestCase):
             data=form_data,
             follow=True
         )
+        actual_post = Post.objects.get(pk=self.post.pk)
+        self.assertEqual(self.post, actual_post)
         self.assertRedirects(response, self.POST_DETAIL_URL)
 
     def test_post_create_and_edit_show_correct_context(self):
@@ -181,7 +185,6 @@ class PostCreateFormsTests(TestCase):
         old_comments = set(Comment.objects.all().values_list('id', flat=True))
         form_data = {
             'text': 'Новый комментарий',
-            'author': self.user_2,
         }
         response = self.another.post(
             self.ADD_COMMENT,
@@ -189,20 +192,25 @@ class PostCreateFormsTests(TestCase):
             follow=True
         )
         self.assertRedirects(response, self.POST_DETAIL_URL)
-        objects_exclude = Comment.objects.exclude(id__in=old_comments)
-        self.assertEqual(len(objects_exclude), 1)
-        self.assertEqual(objects_exclude.get().text, form_data['text'])
-        self.assertEqual(objects_exclude.get().author, form_data['author'])
-        self.assertEqual(objects_exclude.get().post, self.post)
+        new_objects = Comment.objects.exclude(id__in=old_comments)
+        self.assertEqual(len(new_objects), 1)
+        get_comment = new_objects.get()
+        self.assertEqual(get_comment.text, form_data['text'])
+        self.assertEqual(get_comment.author, self.user_2)
+        self.assertEqual(get_comment.post, self.post)
 
     def test_anonim_create_comment(self):
+        comments_before = set(
+            Comment.objects.all().values_list('id', flat=True))
         form_data = {
             'text': 'Новый комментарий',
-            'author': self.user_2,
         }
         response = self.client.post(
             self.ADD_COMMENT,
             data=form_data,
             follow=True
         )
+        comments_after = set(
+            Comment.objects.all().values_list('id', flat=True))
+        self.assertEqual(comments_before, comments_after)
         self.assertRedirects(response, self.ADD_COMMENT_GUEST)

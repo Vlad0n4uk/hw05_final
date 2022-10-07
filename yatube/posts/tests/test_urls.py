@@ -25,6 +25,9 @@ GROUP_URL = reverse('posts:group_list', args=[SLUG])
 ERROR_URL = f'{INDEX_URL}unexisting_page'
 GUEST_CREATE_URL = f'{LOGIN_URL}?next={POST_CREATE_URL}'
 GUEST_FOLLOW_INDEX_URL = f'{LOGIN_URL}?next={FOLLOW_INDEX_URL}'
+FOLLOW_URL = reverse('posts:profile_follow', args=[AUTHOR])
+UNFOLLOW_URL = reverse('posts:profile_unfollow', args=[AUTHOR])
+FOLLOW_URL_GUEST = f'{LOGIN_URL}?next={FOLLOW_URL}'
 
 
 class PostURLTests(TestCase):
@@ -70,6 +73,12 @@ class PostURLTests(TestCase):
             [FOLLOW_INDEX_URL, self.author, OK],
             [FOLLOW_INDEX_URL, self.another, OK],
             [FOLLOW_INDEX_URL, self.guest, REDIRECT],
+            [FOLLOW_URL, self.author, REDIRECT],
+            [FOLLOW_URL, self.another, REDIRECT],
+            [FOLLOW_URL, self.guest, REDIRECT],
+            [UNFOLLOW_URL, self.author, ERROR],
+            [UNFOLLOW_URL, self.another, REDIRECT],
+            [UNFOLLOW_URL, self.guest, REDIRECT],
         ]
         for address, client, status in test_status_code_urls:
             with self.subTest(url=address, status_code=status, user=client):
@@ -99,6 +108,10 @@ class PostURLTests(TestCase):
             [self.EDIT_URL, self.guest, self.GUEST_EDIT_URL],
             [POST_CREATE_URL, self.guest, GUEST_CREATE_URL],
             [FOLLOW_INDEX_URL, self.guest, GUEST_FOLLOW_INDEX_URL],
+            [FOLLOW_URL, self.author, PROFILE_URL],
+            [FOLLOW_URL, self.another, PROFILE_URL],
+            [FOLLOW_URL, self.guest, FOLLOW_URL_GUEST],
+            [UNFOLLOW_URL, self.another, PROFILE_URL],
         ]
         for address, client, redirect_address in all_redirect_urls:
             with self.subTest(
