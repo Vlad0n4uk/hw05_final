@@ -30,10 +30,10 @@
       <p>
         {{ post.text|linebreaksbr }}
       </p>
-      {% if user.username == post.author.username %}
+      {% if user == post.author %}
         <a class="btn btn-primary" href="{% url 'posts:post_edit' post.pk %}">Редактировать пост</a>
       {% endif %}
-      {% include 'includes/comment.html' %}
+      {% include 'posts/includes/comment.html' %}
     </article>
   </div>
 {% endblock %}

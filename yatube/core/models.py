@@ -1,10 +1,12 @@
+from django.contrib.auth import get_user_model
 from django.db import models
 
+User = get_user_model()
 
-class CreatedModel(models.Model):
-    """Абстрактная модель. Добавляет дату создания, текст."""
+
+class GenerationModel(models.Model):
+    """Абстрактная модель. Добавляет дату создания, текст, автора."""
     text = models.TextField(
-        max_length=200,
         verbose_name='Текст',
         help_text='Отредактируйте или введите новый текст'
     )
@@ -13,8 +15,20 @@ class CreatedModel(models.Model):
         verbose_name='Дата публикации',
         db_index=True
     )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='%(class)ss',
+        verbose_name='Автор'
+    )
+    RETURN_STR = 'text={:.15}, pub_date={}'
 
     class Meta:
         # Это абстрактная модель:
         ordering = ('-pub_date',)
         abstract = True
+
+    def __str__(self):
+        return GenerationModel.RETURN_STR.format(
+            self.text, self.pub_date,
+        )

@@ -1,4 +1,4 @@
-from core.models import CreatedModel
+from core.models import GenerationModel
 from django.contrib.auth import get_user_model
 from django.db import models
 
@@ -26,13 +26,7 @@ class Group(models.Model):
         return self.title
 
 
-class Post(CreatedModel):
-    author = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='posts',
-        verbose_name='Автор'
-    )
+class Post(GenerationModel):
     group = models.ForeignKey(
         Group,
         blank=True,
@@ -42,23 +36,21 @@ class Post(CreatedModel):
         verbose_name='Группа'
     )
     image = models.ImageField(
-        'Картинка',
+        'Изображение',
         upload_to='posts/',
         blank=True
     )
-    RETURN_STR = 'text={:.15}, pub_date={}, group={}'
+    RETURN_STR = '{}, group={}'
 
-    class Meta(CreatedModel.Meta):
+    class Meta(GenerationModel.Meta):
         verbose_name = 'Пост'
         verbose_name_plural = 'Посты'
 
     def __str__(self):
-        return Post.RETURN_STR.format(
-            self.text, self.pub_date, self.group
-        )
+        return self.RETURN_STR.format(super().__str__(), self.group)
 
 
-class Comment(CreatedModel):
+class Comment(GenerationModel):
     post = models.ForeignKey(
         Post,
         blank=True,
@@ -67,26 +59,17 @@ class Comment(CreatedModel):
         related_name='comments',
         verbose_name='Пост',
     )
-    author = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='comments',
-        verbose_name='Автор комментария'
-    )
 
-    class Meta(CreatedModel.Meta):
+    class Meta(GenerationModel.Meta):
         verbose_name = 'Комментарий'
         verbose_name_plural = 'Комментарии'
-
-    def __str__(self):
-        return self.text
 
 
 class Follow(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name="follower",
+        related_name='follower',
         verbose_name='Подписчик'
     )
     author = models.ForeignKey(
@@ -95,10 +78,23 @@ class Follow(models.Model):
         related_name="following",
         verbose_name='Автор'
     )
+    RETURN_STR = 'user={} подписан на author={}'
 
-    class Meta:
+    class Meta():
         verbose_name = "Подписка"
         verbose_name_plural = "Подписки"
+        constraints = [
+            models.UniqueConstraint(
+                fields=("author", "user",),
+                name="unique_follow"
+            ),
+            models.CheckConstraint(
+                check=~models.Q(user=models.F('author')),
+                name="self follow is not accessed"
+            )
+        ]
 
     def __str__(self):
-        return f'{self.user.username} подписан на {self.author.username}'
+        return self.RETURN_STR.format(
+            self.user, self.author
+        )

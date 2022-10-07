@@ -34,9 +34,8 @@ def profile(request, username):
     return render(request, POST_PROFILE_HTML, {
         'author': author,
         'page_obj': page_obj(request, author.posts.all()),
-        'following': request.user.is_authenticated and Follow.objects.filter(
-            user=request.user,
-            author=author).exists()
+        'following': request.user.is_authenticated and bool(
+            author.following.filter(user=request.user))
     })
 
 
@@ -46,7 +45,6 @@ def post_detail(request, post_id):
     context = {
         'post': post,
         'form': form,
-        'comments': post.comments.all()
     }
     return render(request, POST_DETAIL_HTML, context)
 
@@ -58,7 +56,7 @@ def post_create(request):
         files=request.FILES or None,
     )
     context = {'form': form}
-    if form.is_valid() is False:
+    if not form.is_valid():
         return render(request, POST_CREATE_HTML, context)
     post = form.save(commit=False)
     post.author = request.user
@@ -108,16 +106,19 @@ def follow_index(request):
 @login_required
 def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
-    if author != request.user:
-        if not Follow.objects.filter(
-                author=author, user=request.user).exists():
-            Follow.objects.create(
-                author=author, user=request.user)
+    if author != request.user and not Follow.objects.filter(
+        author=author,
+        user=request.user
+    ).exists():
+        Follow.objects.create(author=author, user=request.user)
     return redirect('posts:profile', username)
 
 
 @login_required
 def profile_unfollow(request, username):
-    author = get_object_or_404(User, username=username)
-    author.following.filter(user=request.user).delete()
+    get_object_or_404(
+        Follow,
+        user=request.user,
+        author=get_object_or_404(User, username=username)
+    ).delete()
     return redirect('posts:profile', username)

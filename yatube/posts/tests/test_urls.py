@@ -7,8 +7,10 @@ from django.urls import reverse
 from ..models import Group, Post, User
 from posts.settings import (ERROR_HTML, POST_CREATE_HTML, POST_DETAIL_HTML,
                             POST_EDIT_HTML, POST_GROUP_LIST_HTML,
-                            POST_INDEX_HTML, POST_PROFILE_HTML)
+                            POST_INDEX_HTML, POST_PROFILE_HTML,
+                            FOLLOW_HTML)
 
+USER = 'Vlad0n'
 AUTHOR = 'author'
 SLUG = 'slugtest'
 OK = HTTPStatus.OK
@@ -16,14 +18,13 @@ REDIRECT = HTTPStatus.FOUND
 ERROR = HTTPStatus.NOT_FOUND
 LOGIN_URL = reverse('users:login')
 INDEX_URL = reverse('posts:index')
+FOLLOW_INDEX_URL = reverse('posts:follow_index')
 PROFILE_URL = reverse('posts:profile', args=[AUTHOR])
 POST_CREATE_URL = reverse('posts:post_create')
 GROUP_URL = reverse('posts:group_list', args=[SLUG])
-GROUP_URL_LAST_PAGE = f'{GROUP_URL}?page=2'
-PROFILE_URL_LAST_PAGE = f'{PROFILE_URL}?page=2'
-INDEX_URL_LAST_PAGE = f'{INDEX_URL}?page=2'
 ERROR_URL = f'{INDEX_URL}unexisting_page'
 GUEST_CREATE_URL = f'{LOGIN_URL}?next={POST_CREATE_URL}'
+GUEST_FOLLOW_INDEX_URL = f'{LOGIN_URL}?next={FOLLOW_INDEX_URL}'
 
 
 class PostURLTests(TestCase):
@@ -41,22 +42,17 @@ class PostURLTests(TestCase):
             author=cls.user,
             group=cls.group,
         )
-        cls.user_2 = User.objects.create_user(username='Vlad0n')
+        cls.user_2 = User.objects.create_user(username=USER)
         cls.EDIT_URL = reverse('posts:post_edit', args=[cls.post.pk])
         cls.DETAIL_URL = reverse('posts:post_detail', args=[cls.post.pk])
         cls.GUEST_EDIT_URL = f'{LOGIN_URL}?next={cls.EDIT_URL}'
-        cls.ADD_COMMENT = reverse('posts:add_comment', args=[cls.post.pk])
-        cls.GUEST_ADD_COMMENT = f'{LOGIN_URL}?next={cls.ADD_COMMENT}'
-
-    def setUp(self):
-        # Создаем неавторизованный клиент
-        self.guest = Client()
+        cls.guest = Client()
         # Создаем второй клиент
-        self.author = Client()
-        self.another = Client()
+        cls.author = Client()
+        cls.another = Client()
         # Авторизуем пользователя
-        self.author.force_login(self.user)
-        self.another.force_login(self.user_2)
+        cls.author.force_login(cls.user)
+        cls.another.force_login(cls.user_2)
         cache.clear()
 
     def test_status_code(self):
@@ -71,9 +67,9 @@ class PostURLTests(TestCase):
             [self.EDIT_URL, self.guest, REDIRECT],
             [POST_CREATE_URL, self.author, OK],
             [ERROR_URL, self.guest, ERROR],
-            [self.ADD_COMMENT, self.author, REDIRECT],
-            [self.ADD_COMMENT, self.another, REDIRECT],
-            [self.ADD_COMMENT, self.guest, REDIRECT]
+            [FOLLOW_INDEX_URL, self.author, OK],
+            [FOLLOW_INDEX_URL, self.another, OK],
+            [FOLLOW_INDEX_URL, self.guest, REDIRECT],
         ]
         for address, client, status in test_status_code_urls:
             with self.subTest(url=address, status_code=status, user=client):
@@ -88,6 +84,7 @@ class PostURLTests(TestCase):
             PROFILE_URL: POST_PROFILE_HTML,
             self.DETAIL_URL: POST_DETAIL_HTML,
             self.EDIT_URL: POST_EDIT_HTML,
+            FOLLOW_INDEX_URL: FOLLOW_HTML,
             ERROR_URL: ERROR_HTML,
         }
         for address, template in templates_url_names.items():
@@ -101,9 +98,7 @@ class PostURLTests(TestCase):
             [self.EDIT_URL, self.another, self.DETAIL_URL],
             [self.EDIT_URL, self.guest, self.GUEST_EDIT_URL],
             [POST_CREATE_URL, self.guest, GUEST_CREATE_URL],
-            [self.ADD_COMMENT, self.another, self.DETAIL_URL],
-            [self.ADD_COMMENT, self.author, self.DETAIL_URL],
-            [self.ADD_COMMENT, self.guest, self.GUEST_ADD_COMMENT]
+            [FOLLOW_INDEX_URL, self.guest, GUEST_FOLLOW_INDEX_URL],
         ]
         for address, client, redirect_address in all_redirect_urls:
             with self.subTest(
