@@ -8,11 +8,11 @@
   <div class="container py-5">
     <h3> Последние обновления на сайте </h3>
     {% cache 20 page_obj.number %}
-    {% for post in page_obj %}
-      {% include 'posts/includes/post_info.html' %}
-      {% if not forloop.last %}<hr>{% endif %}
-    {% endfor %}
-    {% include 'includes/paginator.html' %}
+      {% for post in page_obj %}
+        {% include 'posts/includes/post_info.html' %}
+        {% if not forloop.last %}<hr>{% endif %}
+      {% endfor %}
+      {% include 'includes/paginator.html' %}
     {% endcache %}
   </div> 
 {% endblock %}

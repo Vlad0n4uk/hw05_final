@@ -37,9 +37,9 @@ class PostModelTest(TestCase):
     def test_models_have_correct_object_names(self):
         """Проверяем, что у моделей корректно работает __str__."""
         str_post = (
-            f'text={self.post.text:.15}, '
-            f'pub_date={self.post.pub_date}, '
-            f'group={self.post.group}'
+            f'{self.post.text:.15}, '
+            f'{self.post.pub_date}, '
+            f'{self.post.group}'
 
         )
         str_comment = (

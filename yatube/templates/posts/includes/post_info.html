@@ -13,6 +13,8 @@
 <p>
   {{ post.text|linebreaksbr }}
 </p>
+{% if not not_show_group %}
 {% if post.group %}
   <a href="{% url 'posts:group_list' post.group.slug %}"> #{{ post.group }} </a>
+{% endif %}
 {% endif %}

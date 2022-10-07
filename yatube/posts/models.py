@@ -40,7 +40,7 @@ class Post(GenerationModel):
         upload_to='posts/',
         blank=True
     )
-    RETURN_STR = '{}, group={}'
+    RETURN_STR = '{}, {}'
 
     class Meta(GenerationModel.Meta):
         verbose_name = 'Пост'
@@ -96,5 +96,5 @@ class Follow(models.Model):
 
     def __str__(self):
         return self.RETURN_STR.format(
-            self.user, self.author
+            self.user.get_username(), self.author.get_username()
         )

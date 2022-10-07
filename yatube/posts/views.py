@@ -26,6 +26,7 @@ def group_posts(request, slug):
     return render(request, POST_GROUP_LIST_HTML, {
         'group': group,
         'page_obj': page_obj(request, group.posts.all()),
+        'not_show_group': False
     })
 
 
@@ -34,8 +35,9 @@ def profile(request, username):
     return render(request, POST_PROFILE_HTML, {
         'author': author,
         'page_obj': page_obj(request, author.posts.all()),
-        'following': request.user.is_authenticated and bool(
-            author.following.filter(user=request.user))
+        'following': Follow.objects.filter(
+            user=request.user.is_authenticated,
+            author=author).exists()
     })
 
 
@@ -119,6 +121,6 @@ def profile_unfollow(request, username):
     get_object_or_404(
         Follow,
         user=request.user,
-        author=get_object_or_404(User, username=username)
+        author__username=username
     ).delete()
     return redirect('posts:profile', username)

@@ -29,6 +29,6 @@ class GenerationModel(models.Model):
         abstract = True
 
     def __str__(self):
-        return GenerationModel.RETURN_STR.format(
+        return self.RETURN_STR.format(
             self.text, self.pub_date,
         )
