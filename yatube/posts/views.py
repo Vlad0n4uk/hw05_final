@@ -26,7 +26,6 @@ def group_posts(request, slug):
     return render(request, POST_GROUP_LIST_HTML, {
         'group': group,
         'page_obj': page_obj(request, group.posts.all()),
-        'not_show_group': False
     })
 
 
