@@ -161,7 +161,7 @@ class PostCreateFormsTests(TestCase):
             follow=True
         )
         actual_post = Post.objects.get(pk=self.post.pk)
-        self.assertEqual(self.post, actual_post)
+        self.assertEqual(self.post.text, actual_post.text)
         self.assertRedirects(response, self.POST_DETAIL_URL)
 
     def test_post_create_and_edit_show_correct_context(self):

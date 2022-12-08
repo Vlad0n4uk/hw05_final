@@ -79,6 +79,7 @@ class PostURLTests(TestCase):
             [UNFOLLOW_URL, self.author, ERROR],
             [UNFOLLOW_URL, self.another, REDIRECT],
             [UNFOLLOW_URL, self.guest, REDIRECT],
+            '''add_comment'''
         ]
         for address, client, status in test_status_code_urls:
             with self.subTest(url=address, status_code=status, user=client):
